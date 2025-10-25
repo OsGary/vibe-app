@@ -7,6 +7,8 @@ A modern full-stack task management application built with React, TypeScript, an
 - ✅ Create, update, and delete tasks
 - 🏷️ Categorize tasks by category
 - 📝 Rich task descriptions
+- 🔐 JWT-based authentication
+- 👤 User-specific tasks (each user sees only their own)
 - 🗄️ PostgreSQL database for data persistence
 - 🎨 Beautiful UI with Tailwind CSS
 - ⚡ Fast development with Vite
@@ -25,6 +27,8 @@ A modern full-stack task management application built with React, TypeScript, an
 - TypeScript
 - PostgreSQL
 - Nodemon
+- bcrypt - password hashing
+- jsonwebtoken - JWT authentication
 
 ## 📋 Prerequisites
 
@@ -36,7 +40,7 @@ A modern full-stack task management application built with React, TypeScript, an
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/your-username/vibe-app.git
+git clone https://github.com/OsGary/vibe-app.git
 cd Vibe-app
 ```
 
@@ -54,6 +58,7 @@ DB_PORT=5432
 DB_NAME=taskmanager
 DB_USER=your_username
 DB_PASSWORD=your_password
+JWT_SECRET=your-secret-key-here
 ```
 
 4. **Setup Database:**
@@ -71,6 +76,23 @@ cd ../frontend
 npm install
 ```
 
+## 🔐 Authentication
+
+The app uses JWT (JSON Web Tokens) for authentication:
+
+- Users must register/login to access the app
+- Passwords are securely hashed with bcrypt
+- JWT tokens are stored in localStorage
+- All tasks are user-specific
+- Token expiration: 7 days
+
+### First Time Setup
+
+1. Start the app and navigate to `http://localhost:5173`
+2. Click "Register here" to create an account
+3. Enter your email and password (min 6 characters)
+4. You'll be automatically logged in after registration
+
 ## 🏃 Running the Application
 
 ### Development Mode
@@ -80,7 +102,7 @@ npm install
 cd backend
 npm run dev
 ```
-Backend runs on `http://localhost:3000`
+Backend runs on `http://localhost:3001`
 
 **Terminal 2 - Frontend:**
 ```bash
@@ -114,18 +136,26 @@ Vibe-app/
 │   │   ├── db/
 │   │   │   ├── connection.ts
 │   │   │   └── schema.sql
+│   │   ├── middleware/
+│   │   │   └── auth.ts
 │   │   ├── routes/
+│   │   │   ├── auth.ts
 │   │   │   └── tasks.ts
 │   │   ├── types/
-│   │   │   └── task.ts
+│   │   │   ├── task.ts
+│   │   │   └── user.ts
 │   │   └── index.ts
 │   └── package.json
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── Login.tsx
+│   │   │   ├── Register.tsx
 │   │   │   ├── TaskForm.tsx
 │   │   │   ├── TaskItem.tsx
 │   │   │   └── TaskList.tsx
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx
 │   │   ├── services/
 │   │   │   └── api.ts
 │   │   ├── types/
@@ -137,7 +167,13 @@ Vibe-app/
 
 ## 🔌 API Endpoints
 
-- `GET /api/tasks` - Get all tasks
+### Authentication
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user (protected)
+
+### Tasks (All protected - require authentication)
+- `GET /api/tasks` - Get all tasks for logged-in user
 - `GET /api/tasks/:id` - Get a specific task
 - `POST /api/tasks` - Create a new task
 - `PUT /api/tasks/:id` - Update a task
@@ -151,6 +187,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 MIT
 
-## �� Author
+## 👤 Author
 
-Your Name
+OsGary
