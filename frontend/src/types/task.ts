@@ -20,3 +20,14 @@ export interface UpdateTaskDTO {
   category?: string;
   is_completed?: boolean;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}

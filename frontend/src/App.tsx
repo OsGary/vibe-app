@@ -1,17 +1,24 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from './contexts/AuthContext';
 import type { Task, CreateTaskDTO } from './types/task';
 import { getTasks, createTask, updateTask, deleteTask } from './services/api';
 import TaskList from './components/TaskList';
 import TaskForm from './components/TaskForm';
+import Login from './components/Login';
+import Register from './components/Register';
 
 function App() {
+  const { user, loading: authLoading, logout } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showLogin, setShowLogin] = useState(true);
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    if (user) {
+      fetchTasks();
+    }
+  }, [user]);
 
   const fetchTasks = async () => {
     try {
@@ -63,12 +70,50 @@ function App() {
     }
   };
 
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth forms if not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4">
+        <div className="w-full max-w-md">
+          {showLogin ? (
+            <Login onSwitchToRegister={() => setShowLogin(false)} />
+          ) : (
+            <Register onSwitchToLogin={() => setShowLogin(true)} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show task manager if authenticated
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Task Manager</h1>
-          <p className="text-gray-600">Organize your tasks efficiently</p>
+        <header className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Task Manager</h1>
+              <p className="text-gray-600">Welcome, {user.email}!</p>
+            </div>
+            <button
+              onClick={logout}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </header>
 
         {error && (

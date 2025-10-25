@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import pool from './db/connection';
 import tasksRouter from './routes/tasks';
+import authRouter from './routes/auth';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', authRouter);
 app.use('/api/tasks', tasksRouter);
 
 // Test database connection

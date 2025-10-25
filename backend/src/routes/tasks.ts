@@ -1,13 +1,21 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db/connection';
 import { CreateTaskDTO, UpdateTaskDTO } from '../types/task';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
+
+// Apply auth middleware to all routes
+router.use(authMiddleware);
 
 // GET all tasks
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+    const userId = req.userId;
+    const result = await pool.query(
+      'SELECT * FROM tasks WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching tasks:', error);
@@ -19,7 +27,11 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
+    const userId = req.userId;
+    const result = await pool.query(
+      'SELECT * FROM tasks WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Task not found' });
@@ -36,14 +48,15 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const { title, description, category }: CreateTaskDTO = req.body;
+    const userId = req.userId;
     
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
     }
     
     const result = await pool.query(
-      'INSERT INTO tasks (title, description, category) VALUES ($1, $2, $3) RETURNING *',
-      [title, description || null, category || null]
+      'INSERT INTO tasks (user_id, title, description, category) VALUES ($1, $2, $3, $4) RETURNING *',
+      [userId, title, description || null, category || null]
     );
     
     res.status(201).json(result.rows[0]);
@@ -57,6 +70,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = req.userId;
     const { title, description, category, is_completed }: UpdateTaskDTO = req.body;
     
     // Build dynamic update query
@@ -86,9 +100,9 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
     
     updates.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(id);
+    values.push(id, userId);
     
-    const query = `UPDATE tasks SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
+    const query = `UPDATE tasks SET ${updates.join(', ')} WHERE id = $${paramCount} AND user_id = $${paramCount + 1} RETURNING *`;
     
     const result = await pool.query(query, values);
     
@@ -107,8 +121,12 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = req.userId;
     
-    const result = await pool.query('DELETE FROM tasks WHERE id = $1 RETURNING *', [id]);
+    const result = await pool.query(
+      'DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, userId]
+    );
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Task not found' });
